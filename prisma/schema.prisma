@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// One employer. defaultBaseSalaryCents is copied onto a new staff member
+/// when the request does not pass its own base salary.
+model Company {
+  id                      String        @id @default(cuid())
+  name                    String
+  defaultBaseSalaryCents  Int
+  createdAt               DateTime      @default(now())
+  staff                   StaffMember[]
+}
+
+model StaffMember {
+  id               String        @id @default(cuid())
+  name             String
+  type             StaffType
+  joinedAt         DateTime
+  baseSalaryCents  Int
+  companyId        String
+  company          Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supervisorId     String?
+  supervisor       StaffMember?  @relation("Reports", fields: [supervisorId], references: [id], onDelete: SetNull)
+  subordinates     StaffMember[] @relation("Reports")
+  createdAt        DateTime      @default(now())
+
+  @@index([companyId])
+  @@index([supervisorId])
+}
+
+enum StaffType {
+  employee
+  manager
+  sales
+}
